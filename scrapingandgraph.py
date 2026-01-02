@@ -4,9 +4,14 @@ import pandas as pd
 import yfinance as yf
 from datetime import datetime, timedelta
 import os
+os.environ['MPLBACKEND'] = 'Agg'
+import matplotlibt
+print(f"Backend in uso: {matplotlib.get_backend()}") 
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.dates as mpl_dates
-from mplfinance.original_flavor import candlestick_ohlc
+plt.ioff()
+
 
 # -------------------------------
 # Cartella e CSV
@@ -100,17 +105,34 @@ os.makedirs(cartella_grafici, exist_ok=True)
 
 for ticker in final_df['Ticker'].unique():
     df_ticker = final_df[final_df['Ticker'] == ticker].copy()
-    ohlc = df_ticker[['Date','Open','High','Low','Close']].copy()
-
-    # Converti le date in formato matplotlib
-    ohlc['Date'] = ohlc['Date'].apply(mpl_dates.date2num)
-
+    df_ticker = df_ticker.sort_values('Date')
+    
     fig, ax = plt.subplots(figsize=(12,6))
-    candlestick_ohlc(ax, ohlc.values, width=0.6, colorup='green', colordown='red', alpha=0.8)
+    
+    # Determina colore (verde se chiusura > apertura, rosso altrimenti)
+    colors = ['green' if close >= open_ else 'red' 
+              for close, open_ in zip(df_ticker['Close'], df_ticker['Open'])]
+    
+    # Corpo della candela (rettangolo tra Open e Close)
+    for i, (date, open_, high, low, close, color) in enumerate(
+        zip(df_ticker['Date'], df_ticker['Open'], df_ticker['High'], 
+            df_ticker['Low'], df_ticker['Close'], colors)):
+        
+        # Linea verticale (High-Low)
+        ax.plot([date, date], [low, high], color='black', linewidth=1)
+        
+        # Rettangolo corpo candela
+        height = abs(close - open_)
+        bottom = min(open_, close)
+        ax.bar(date, height, bottom=bottom, width=0.6, color=color, alpha=0.8)
+    
     ax.set_title(f"{ticker} - Grafico a candele 1 anno")
     ax.set_xlabel("Data")
-    ax.set_ylabel("Prezzo")
-    ax.xaxis.set_major_formatter(mpl_dates.DateFormatter("%d-%m-%Y"))
+    ax.set_ylabel("Prezzo ($)")
     fig.autofmt_xdate()
-    fig.tight_layout()
-    plt.show()
+    plt.tight_layout()
+    output_path = os.path.join(cartella_grafici, f"{ticker}.png")
+    fig.savefig(output_path, dpi=100, bbox_inches='tight')
+    plt.close(fig)
+print(f"grafici salvati in: {cartella_grafici}")
+plt.close('all')
