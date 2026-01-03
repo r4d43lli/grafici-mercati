@@ -14,7 +14,9 @@ cartella_immagini = os.path.join(cartella_script, "Grafici")
 os.makedirs(cartella_immagini, exist_ok=True)
 
 # URL della pagina Yahoo 
-link = "https://finance.yahoo.com/markets/stocks/most-active/"
+link = input("Inserisci l'url da cui estrarre i ticker, se si vuole utilizzare quello defalut premi invio: ")
+if link == "":
+    link = 'https://finance.yahoo.com/markets/stocks/most-active/'
 
 # simulazione di un browser per evitare di venire bloccati dal sito
 intestazione = {"User-Agent": "Mozilla/5.0"}
@@ -22,12 +24,17 @@ intestazione = {"User-Agent": "Mozilla/5.0"}
 # richiesta di download della pagina web
 risposta = requests.get(link, headers=intestazione)
 
+
 # conversione da HTML a formato leggibile 
 pagina = BeautifulSoup(risposta.text, "html.parser")
 
+
 # ricerca della tabella con dentro i ticker
 tabella = pagina.find("table")
-
+# verifica dell'url
+if tabella is None:
+    print("Url non valido")
+    quit()
 
 # Estrazione dei simboli ticker dalla tabella
 tickers = []
